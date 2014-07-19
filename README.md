@@ -8,6 +8,9 @@ Example: `python dsthumbgen.py --directory c:\photos`
 
 Subdirectories will always be processed.
 
+## Requirements
+The script needs the Pillow imaing library (https://pypi.python.org/pypi/Pillow/2.5.1) to be installed.
+
 ## Good to know
 Given a file and folder structure like below:
 
