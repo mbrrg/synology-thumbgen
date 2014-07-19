@@ -11,11 +11,14 @@ Subdirectories will always be processed.
 ## Good to know
 Given a file and folder structure like below:
 
+```
 c:\photos\001.jpg
 c:\photos\dir1\002.jpg
+```
 
 ...the utility will create the following:
 
+```
 c:\photos\eaDir_tmp\001.jpg\SYNOPHOTO_THUMB_XL.jpg
 c:\photos\eaDir_tmp\001.jpg\SYNOPHOTO_THUMB_B.jpg
 c:\photos\eaDir_tmp\001.jpg\SYNOPHOTO_THUMB_M.jpg
@@ -26,9 +29,11 @@ c:\photos\dir1\eaDir_tmp\002.jpg\SYNOPHOTO_THUMB_B.jpg
 c:\photos\dir1\eaDir_tmp\002.jpg\SYNOPHOTO_THUMB_M.jpg
 c:\photos\dir1\eaDir_tmp\002.jpg\SYNOPHOTO_THUMB_PREVIEW.jpg
 c:\photos\dir1\eaDir_tmp\002.jpg\SYNOPHOTO_THUMB_S.jpg
+```
 
 `eaDir_tmp` is used as a temporary directory name as @ characters are not valid in file names on Windows. Therefore these folders must be renamed to `@eaDir` for PhotoStation to recognize them. This renaming process must be done via SSH to the DiskStation unless the volume is mounted by NFS. Useful commands:
 
+```
 # remove any existing thumbnail directories, dry-run check print out before running next command!
 find /volume1/photos -type d -name '@eaDir' -exec echo '{}' \;
 
@@ -37,3 +42,4 @@ find /volume1/photos -type d -name '@eaDir' -exec rm -rf '{}' \;
 
 # rename directories
 find /volume1/photos -type d -name 'eaDir_tmp' -exec mv '{}' @eaDir \;
+```
