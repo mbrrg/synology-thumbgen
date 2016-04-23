@@ -79,14 +79,16 @@ def print_progress():
 def process_file(file_path):
     print(file_path)
 
-    (dir, filename) = os.path.split(file_path)
-    thumb_dir = os.path.join(dir, 'eaDir_tmp', filename)
-    ensure_directory_exists(thumb_dir)
+    try:
+        (dir, filename) = os.path.split(file_path)
+        thumb_dir = os.path.join(dir, 'eaDir_tmp', filename)
+        ensure_directory_exists(thumb_dir)
 
-    create_thumbnails(file_path, thumb_dir)
+        create_thumbnails(file_path, thumb_dir)
 
-    print_progress()
-
+        print_progress()
+    except Exception, e:
+        print("Exception processing last file: {0}", str(e))
 
 def ensure_directory_exists(path):
     try:
