@@ -87,7 +87,7 @@ def process_file(file_path):
         create_thumbnails(file_path, thumb_dir)
 
         print_progress()
-    except Exception, e:
+    except Exception as e:
         print("Exception processing last file: {0}", str(e))
 
 def ensure_directory_exists(path):
