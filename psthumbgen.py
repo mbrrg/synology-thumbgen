@@ -81,7 +81,7 @@ def process_file(file_path):
 
     try:
         (dir, filename) = os.path.split(file_path)
-        thumb_dir = os.path.join(dir, 'eaDir_tmp', filename)
+        thumb_dir = os.path.join(dir, '@eaDir', filename)
         ensure_directory_exists(thumb_dir)
 
         create_thumbnails(file_path, thumb_dir)
@@ -117,3 +117,4 @@ def create_thumbnails(source_path, dest_dir):
 
 if __name__ == "__main__":
     sys.exit(main())
+
