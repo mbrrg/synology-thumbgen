@@ -9,7 +9,7 @@ Example: `python dsthumbgen.py --directory c:\photos`
 Subdirectories will always be processed.
 
 ## Requirements
-The script needs the Pillow imaing library (https://pypi.python.org/pypi/Pillow/2.5.1) to be installed.
+The script needs the [Pillow imaing library](https://pypi.python.org/pypi/Pillow) to be installed.
 
 ## Good to know
 Given a file and folder structure like below:
@@ -38,11 +38,12 @@ c:\photos\dir1\eaDir_tmp\002.jpg\SYNOPHOTO_THUMB_S.jpg
 
 ```
 # remove any existing thumbnail directories, dry-run check print out before running next command!
-find /volume1/photos -type d -name '@eaDir' -exec echo '{}' \;
+find . -depth -type d -name 'eaDir_tmp' -execdir echo '{}' \;
 
 # remove any existing thumbnail directories
-find /volume1/photos -type d -name '@eaDir' -exec rm -rf '{}' \;
+find . -depth -type d -name 'eaDir_tmp' -execdir rm -rf '{}' \;
 
 # rename directories
-find /volume1/photos -type d -name 'eaDir_tmp' -exec mv '{}' @eaDir \;
+find . -depth -type d -name 'eaDir_tmp' -execdir mv '{}' @eaDir \;
+
 ```
