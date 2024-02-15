@@ -7,7 +7,10 @@ import time
 from PIL import Image
 from multiprocessing import Pool
 from multiprocessing import Value
-
+import subprocess
+import tempfile
+from PIL import ImageOps
+from PIL.ExifTags import TAGS
 
 class State(object):
     def __init__(self):
@@ -27,9 +30,11 @@ class State(object):
         return self.start_ticks.value
 
 
-def init(args):
+def init(s, args):
     global state
-    state = args
+    state = s
+    state.eaDir = args.eaDir
+    state.force = args.force
 
 
 def main():
@@ -38,7 +43,11 @@ def main():
 
     files = find_files(args.directory)
 
-    with Pool(processes=4, initializer=init, initargs=(state, )) as pool:
+    cores = os.cpu_count()
+    half_cores = cores // 2
+    parallel = max(4, half_cores)
+
+    with Pool(processes=parallel, initializer=init, initargs=(state, args)) as pool:
         pool.map(process_file, files)
 
     print("{0} files processed in total.".format(state.value))
@@ -47,15 +56,18 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Create thumbnails for Synology Photo Station.")
-    parser.add_argument("--directory", required=True,
+    parser.add_argument('-d', "--directory", required=True,
                         help="Directory to generate thumbnails for. "
                              "Subdirectories will always be processed.")
+    parser.add_argument("-e", "--eaDir", required=False, default=False, action="store_true",
+                        help="write directly to @eaDir rather than eaDir_tmp")
+    parser.add_argument("-f", "--force", required=False, default=False, action="store_true",)
 
     return parser.parse_args()
 
 
 def find_files(dir):
-    valid_exts = ('jpeg', 'jpg', 'bmp', 'gif')
+    valid_exts = ('jpeg', 'jpg', 'bmp', 'gif', 'png', 'avi', 'mp4', 'mov', 'm4v')
     valid_exts_re = "|".join(
         map((lambda ext: ".*\\.{0}$".format(ext)), valid_exts))
 
@@ -77,10 +89,15 @@ def print_progress():
 
 
 def process_file(file_path):
+    global state
     print(file_path)
 
     (dir, filename) = os.path.split(file_path)
-    thumb_dir = os.path.join(dir, 'eaDir_tmp', filename)
+    
+    if (state.eaDir):
+        thumb_dir = os.path.join(dir, '@eaDir', filename)
+    else:
+        thumb_dir = os.path.join(dir, 'eaDir_tmp', filename)
     ensure_directory_exists(thumb_dir)
 
     create_thumbnails(file_path, thumb_dir)
@@ -97,20 +114,65 @@ def ensure_directory_exists(path):
 
 
 def create_thumbnails(source_path, dest_dir):
-    im = Image.open(source_path)
-
+    global state
     to_generate = (('SYNOPHOTO_THUMB_XL.jpg', 1280),
                    ('SYNOPHOTO_THUMB_B.jpg', 640),
                    ('SYNOPHOTO_THUMB_M.jpg', 320),
                    ('SYNOPHOTO_THUMB_PREVIEW.jpg', 160),
                    ('SYNOPHOTO_THUMB_S.jpg', 120))
 
-    for thumb in to_generate:
-        if os.path.exists(os.path.join(dest_dir, thumb[0])):
-            continue
+    skip_this = True
+    if state.force:
+        skip_this = False
+    else:
+        for thumb in to_generate:
+            if os.path.exists(os.path.join(dest_dir, thumb[0])):
+                continue
+            else:
+                skip_all = False
+                break
 
-        im.thumbnail((thumb[1], thumb[1]), Image.ANTIALIAS)
-        im.save(os.path.join(dest_dir, thumb[0]))
+    if skip_this:
+        return
+
+    spath_low = source_path.lower()
+    video_ext = ('avi', 'mp4', 'mov', 'm4v') 
+    snapshot_file = False
+
+    try:
+        if (spath_low.endswith(video_ext)):
+            temp_name = next(tempfile._get_candidate_names())
+            snapshot_file=os.path.join(dest_dir, temp_name + ".jpg")
+            subprocess.call(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-i', source_path, '-ss', '00:00:00.000', '-vframes', '1', snapshot_file])
+            im = Image.open(snapshot_file)
+        else:
+            im = Image.open(source_path)
+    except Exception as e:
+        print(e)
+        return
+
+    try:
+        exif = im._getexif()
+        image = ImageOps.exif_transpose(im)
+        im = image
+    except Exception as e:
+        print(e)
+
+
+
+    for thumb in to_generate:
+        if not state.force:
+            if os.path.exists(os.path.join(dest_dir, thumb[0])):
+                continue
+
+        try:
+            im.thumbnail((thumb[1], thumb[1]), Image.ANTIALIAS)
+            im.save(os.path.join(dest_dir, thumb[0]))
+        except Exception as e:
+            print(e)
+
+    if snapshot_file:
+        os.remove(snapshot_file)
 
 
 if __name__ == "__main__":
